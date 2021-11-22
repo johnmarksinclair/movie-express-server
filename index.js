@@ -1,9 +1,8 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import AWS from "aws-sdk";
+var express = require("express");
+var cors = require("cors");
+var AWS = require("aws-sdk");
 
-dotenv.config();
+require("dotenv").config();
 const app = express();
 app.use(cors());
 const port = 8080;
@@ -81,9 +80,7 @@ async function populateTable(moviedata) {
         await docClient.put(doc).promise();
       } catch (err) {
         console.log("error adding doc to db:");
-        console.log(movie);
         console.log(doc);
-        console.log(err);
       }
     });
     return true;
