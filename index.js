@@ -90,31 +90,35 @@ async function populateTable(moviedata) {
   }
 }
 
+var created = false;
 app.post("/create", async function (req, res) {
-  let moviedata = await fetchMovieData();
-  if (moviedata == false) {
-    res.status(500);
-    res.json({ success: false, error: "failed to fetch movie data from s3" });
-    return;
+  if (created == false) {
+    let moviedata = await fetchMovieData();
+    if (moviedata == false) {
+      res.status(500);
+      res.json({ success: false, error: "failed to fetch movie data from s3" });
+      return;
+    }
+    console.log("movie data fetched from s3");
+    let creation = await createTable();
+    if (creation == false) {
+      res.status(500);
+      res.json({ success: false, error: "failed to create ddb table" });
+      return;
+    }
+    console.log("table created");
+    let initialised = false;
+    while (!initialised) {
+      let description = await dynamodb
+        .describeTable({ TableName: tableName })
+        .promise();
+      if (description.Table.TableStatus == "ACTIVE") initialised = true;
+    }
+    console.log("table initialised");
+    let populated = await populateTable(moviedata);
+    console.log("table populated");
+    created = true;
   }
-  console.log("movie data fetched from s3");
-  let creation = await createTable();
-  if (creation == false) {
-    res.status(500);
-    res.json({ success: false, error: "failed to create ddb table" });
-    return;
-  }
-  console.log("table created");
-  let initialised = false;
-  while (!initialised) {
-    let description = await dynamodb
-      .describeTable({ TableName: tableName })
-      .promise();
-    if (description.Table.TableStatus == "ACTIVE") initialised = true;
-  }
-  console.log("table initialised");
-  let populated = await populateTable(moviedata);
-  console.log("table populated");
   res.status(200);
   res.json({ success: true });
 });
@@ -150,16 +154,19 @@ app.get("/query", async function (req, res) {
 });
 
 app.delete("/destroy", async function (req, res) {
-  dynamodb.deleteTable({ TableName: tableName }, function (err, data) {
-    if (err) {
-      res.status(500);
-      res.json({ destroyed: false, error: err });
-    } else {
-      console.log("table deleted");
-      res.status(200);
-      res.json({ destroyed: true });
-    }
-  });
+  if (created == true) {
+    dynamodb.deleteTable({ TableName: tableName }, function (err, data) {
+      if (err) {
+        res.status(500);
+        res.json({ destroyed: false, error: err });
+      } else {
+        console.log("table deleted");
+        created = false;
+        res.status(200);
+        res.json({ destroyed: true });
+      }
+    });
+  }
 });
 
 app.listen(port, function () {
