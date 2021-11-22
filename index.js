@@ -113,7 +113,7 @@ app.post("/create", async function (req, res) {
     if (description.Table.TableStatus == "ACTIVE") initialised = true;
   }
   console.log("table initialised");
-  await populateTable(moviedata);
+  let populated = await populateTable(moviedata);
   console.log("table populated");
   res.status(200);
   res.json({ success: true });
