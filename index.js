@@ -154,19 +154,17 @@ app.get("/query", async function (req, res) {
 });
 
 app.delete("/destroy", async function (req, res) {
-  if (created == true) {
-    dynamodb.deleteTable({ TableName: tableName }, function (err, data) {
-      if (err) {
-        res.status(500);
-        res.json({ destroyed: false, error: err });
-      } else {
-        console.log("table deleted");
-        created = false;
-        res.status(200);
-        res.json({ destroyed: true });
-      }
-    });
-  }
+  dynamodb.deleteTable({ TableName: tableName }, function (err, data) {
+    if (err) {
+      res.status(500);
+      res.json({ destroyed: false, error: err });
+    } else {
+      console.log("table deleted");
+      created = false;
+      res.status(200);
+      res.json({ destroyed: true });
+    }
+  });
 });
 
 app.listen(port, function () {
